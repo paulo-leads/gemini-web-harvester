@@ -28,7 +28,7 @@ def crawler_mvp(seed_url, max_pages=5):
 
         try:
             # Faz a requisição usando o cloudscraper (timeout um pouco maior por causa da evasão)
-            response = scraper.get(current_url, timeout=15)
+            response = scraper.get(current_url, timeout=55)
             
             print(f"Resposta do servidor: Status {response.status_code}")
             
@@ -69,6 +69,6 @@ def crawler_mvp(seed_url, max_pages=5):
 if __name__ == "__main__":
     # A URL alvo real de vocês
     URL_ALVO = "https://camillodantas.com.br/"
-    LIMITE_PAGINAS = 5
+    LIMITE_PAGINAS = 20
     
     crawler_mvp(URL_ALVO, max_pages=LIMITE_PAGINAS)
