@@ -61,5 +61,5 @@ def crawler_mvp(seed_url, max_pages=5):
 
 if __name__ == "__main__":
     # Usando um site de testes feito especificamente para raspagem
-    URL_ALVO = "https://quotes.toscrape.com/"
+    URL_ALVO = "https://camillodantas.com.br/"
     crawler_mvp(URL_ALVO, max_pages=5)
