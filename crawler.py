@@ -1,39 +1,51 @@
 import cloudscraper
 from bs4 import BeautifulSoup
-from urllib.parse import urljoin, urldefrag
+from urllib.parse import urljoin, urldefrag, urlparse
 import csv
 import time
+from collections import deque
 
-def crawler_mvp(seed_url, max_pages=5):
-    print(f"Iniciando a colheitadeira furtiva em: {seed_url}")
-    visited_urls = set()
-    urls_to_visit = [seed_url]
+def crawler_definitivo(seed_url):
+    print(f"Iniciando a Colheitadeira em MODO INFINITO: {seed_url}")
     
-    # MUDANÇA DE ARQUITETURA: Trocamos a lista [] por um Set ()
-    # O Set automaticamente deleta qualquer linha duplicada!
+    # 1. A Trava de Segurança: Extrai o domínio base (ex: camillodantas.com.br)
+    # Isso impede que o robô escape para o YouTube, LinkedIn, etc.
+    dominio_alvo = urlparse(seed_url).netloc
+    
+    # 2. Arquitetura de Fila Rápida: 'deque' não trava a memória com milhares de itens
+    urls_to_visit = deque([seed_url])
+    visited_urls = set()
     catalog = set()
 
+    # O disfarce anti-bloqueio
     scraper = cloudscraper.create_scraper(browser={
         'browser': 'chrome',
         'platform': 'windows',
         'desktop': True
     })
 
-    while urls_to_visit and len(visited_urls) < max_pages:
-        current_url = urls_to_visit.pop(0)
-        
-        # Limpa qualquer "lixo" (fragmentos #) da URL que estamos visitando agora
+    paginas_rastreadas = 0
+
+    # 3. O Laço Infinito: Roda enquanto houver links na fila
+    while urls_to_visit:
+        # Puxa o próximo link da fila
+        current_url = urls_to_visit.popleft() 
         current_url, _ = urldefrag(current_url)
 
         if current_url in visited_urls:
             continue
 
-        print(f"Rastreando: {current_url}")
         visited_urls.add(current_url)
+        paginas_rastreadas += 1
+        print(f"[{paginas_rastreadas}] Rastreando: {current_url}")
 
         try:
             response = scraper.get(current_url, timeout=45)
             
+            # Filtro de Sanidade: Só lê a página se for HTML (ignora PDFs e Imagens pesadas)
+            if 'text/html' not in response.headers.get('Content-Type', ''):
+                continue
+
             if response.status_code != 200:
                 continue
             
@@ -42,44 +54,47 @@ def crawler_mvp(seed_url, max_pages=5):
             for link in soup.find_all('a', href=True):
                 href = link['href']
                 full_url = urljoin(current_url, href)
-                
-                # A MAGIA DA LIMPEZA: Corta fora as âncoras (#advisory, #contato)
                 full_url, _ = urldefrag(full_url)
                 
                 if full_url.startswith('http'):
-                    # Salva como uma tupla dentro do Set. Se já existir, o Python ignora.
+                    # Salva no catálogo (o 'set' já impede duplicação)
                     catalog.add((current_url, full_url))
                     
-                    if seed_url in full_url and full_url not in visited_urls and full_url not in urls_to_visit:
-                        urls_to_visit.append(full_url)
-                        
-            time.sleep(2)
+                    # A REGRA DE OURO DA RASPAGEM INFINITA:
+                    # Só enfileira a página para visitar SE for do mesmo domínio alvo
+                    if urlparse(full_url).netloc == dominio_alvo:
+                        if full_url not in visited_urls and full_url not in urls_to_visit:
+                            urls_to_visit.append(full_url)
+                            
+            # Pausa de 1 segundo (Respeito ao servidor e evita banimento de IP)
+            time.sleep(1)
             
         except Exception as e:
             print(f"Erro ao acessar {current_url}: {e}")
 
-    # Exportação dos dados limpos
-    print(f"\nFinalizado! Salvando {len(catalog)} links ÚNICOS no arquivo CSV...")
+    # Exportação Final
+    print(f"\n=======================================================")
+    print(f"Fim da Linha! O site inteiro foi mapeado.")
+    print(f"Salvando {len(catalog)} links ÚNICOS no arquivo CSV...")
+    
     with open('catalogo_links.csv', 'w', newline='', encoding='utf-8') as f:
-        # Mudamos de DictWriter para writer comum, pois agora lidamos com tuplas
         writer = csv.writer(f)
         writer.writerow(['origem', 'link_encontrado'])
         for origem, destino in catalog:
             writer.writerow([origem, destino])
 
 if __name__ == "__main__":
-    URL_ALVO = "https://camillodantas.com.br/"
-    LIMITE_PAGINAS = 10 
+    # URL Alvo Principal
+    URL_ALVO = "https://speedio.com.br/"
     
-    # LIGA O CRONÔMETRO
+    # Inicia o Cronômetro
     tempo_inicio = time.time() 
     
-    # Roda a colheitadeira
-    crawler_mvp(URL_ALVO, max_pages=LIMITE_PAGINAS)
+    # Dispara a função sem limite de páginas
+    crawler_definitivo(URL_ALVO)
     
-    # DESLIGA O CRONÔMETRO E CALCULA O RESULTADO
+    # Finaliza o Cronômetro
     tempo_fim = time.time()
-    tempo_total = tempo_fim - tempo_inicio
     
-    print(f"\n⏱️ Relatório de Telemetria:")
-    print(f"A colheita levou um total de {tempo_total:.2f} segundos para ser concluída.")
+    print(f"⏱️ Missão Cumprida: Tempo total de execução: {(tempo_fim - tempo_inicio):.2f} segundos.")
+    print(f"=======================================================\n")
