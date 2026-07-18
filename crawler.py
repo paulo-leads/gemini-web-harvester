@@ -85,7 +85,7 @@ def crawler_definitivo(seed_url):
 
 if __name__ == "__main__":
     # URL Alvo Principal
-    URL_ALVO = "https://neilpatelbrasil.com.br/"
+    URL_ALVO = "https://materiaisgratuitos.net.br/dicionrio-do-mercado-imobilirio"
     
     # Inicia o Cronômetro
     tempo_inicio = time.time() 
